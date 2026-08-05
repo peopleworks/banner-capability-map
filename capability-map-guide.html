@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Banner Capability Map: find what you already own and don't use</title>
+<link rel="icon" href="data:,">
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:800px;margin:0 auto;
+padding:34px 26px 60px;color:#1f2933;background:#fff;line-height:1.62;font-size:16px}
+h1{font-size:30px;color:#1F3864;margin:0 0 6px;line-height:1.2}
+.sub{color:#5B6B7C;font-size:17px;margin:0 0 6px}
+.byline{color:#9aa5b1;font-size:13px;margin:0 0 26px;border-bottom:1px solid #eef1f4;padding-bottom:18px}
+h2{font-size:21px;color:#1F3864;margin:34px 0 8px;border-top:2px solid #f0f2f5;padding-top:22px}
+h3{font-size:16px;color:#B03A2E;margin:22px 0 4px;text-transform:uppercase;letter-spacing:.4px}
+p{margin:10px 0}
+b{color:#12233d}
+code{font-family:ui-monospace,Consolas,monospace;font-size:14px;background:#f2f4f7;padding:1px 5px;border-radius:4px;color:#B03A2E}
+pre{background:#0f2035;color:#e8eef6;border-radius:8px;padding:15px 17px;overflow-x:auto;font-size:13.5px;
+line-height:1.5;margin:12px 0}
+pre .c{color:#7f97b5}
+pre .k{color:#8fd3ff}
+pre .s{color:#ffd39b}
+.rooms{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}
+.room{flex:1;min-width:170px;border-radius:9px;padding:13px 15px;border:1px solid #eef1f4}
+.room .rt{font-size:24px;letter-spacing:2px;margin-bottom:7px}
+.room .rl{font-weight:800;font-size:13px;color:#1F3864}
+.room .rd{font-size:12px;color:#5B6B7C;margin-top:2px;line-height:1.45}
+.room.idle{background:#fdf4f2;border-color:#f2c9bf}
+.room.live{background:#f2f9f5;border-color:#bfe0cd}
+.room.none{background:#f7f8f9;border-color:#dde2e8}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0}
+th{background:#1F3864;color:#fff;text-align:left;padding:8px 10px;font-size:12.5px}
+td{border-bottom:1px solid #eef1f4;padding:7px 10px;vertical-align:top}
+td code{background:#eef2f7}
+.chip{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;
+color:#fff;padding:2px 8px;border-radius:10px}
+.chip.red{background:#B03A2E}.chip.amber{background:#C9A227}.chip.green{background:#1E6F50}.chip.grey{background:#9aa5b1}
+.verd{margin:12px 0}
+.verd .vrow{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid #eef1f4;font-size:14px}
+.verd .cond{flex:1}
+.rule{background:#eef3fb;border-left:4px solid #1F3864;padding:13px 15px;border-radius:0 6px 6px 0;margin:14px 0;font-size:14.5px}
+.warn{background:#fbf7ee;border-left:4px solid #C9A227;padding:13px 15px;border-radius:0 6px 6px 0;margin:14px 0;font-size:14.5px}
+.note{color:#5B6B7C;font-size:14px}
+footer{margin-top:40px;border-top:1px solid #eef1f4;padding-top:16px;color:#9aa5b1;font-size:13px}
+</style>
+</head>
+<body>
+
+<h1>The Banner Capability Map</h1>
+<p class="sub">How to find what your institution already owns in Banner, and does not use, from your own database in an afternoon.</p>
+<p class="byline">A method article. Everything here uses public Banner and Oracle data-dictionary objects that anyone can look up. No institution-specific data appears anywhere in it.</p>
+
+<p>Every college running Banner pays Ellucian for a broad platform, and every one of them
+uses only part of it. The trouble is that nobody can easily say <i>which</i> part. So when
+a department asks to buy a new product, the honest answer is usually a shrug, and the
+easy answer is to buy it, sometimes for a capability Banner already ships and the college
+already owns.</p>
+
+<p>This article shows how to replace the shrug with a measured answer, using nothing but
+read-only queries against your own Banner database. The idea is simple enough to hold in
+your head, and the evidence comes straight from Banner itself.</p>
+
+<h2>The idea in one picture: a capability is a room</h2>
+
+<p>Think of any Banner capability, Fixed Assets, Event Management, Workflow, as a
+<b>room</b>. Banner ships the <b>doors</b>: the screens (forms) you navigate to. Your
+security setup decides who holds a <b>key</b>: which users can reach those screens. And
+the <b>data</b> inside the room is whether anyone actually walks in and uses it.</p>
+
+<div class="rooms">
+  <div class="room idle"><div class="rt">&#128682; &#128273; &#183;&#183;&#183;</div>
+    <div class="rl">Owned, and idle</div>
+    <div class="rd">Doors built, keys handed out, nobody inside. The purchase to question.</div></div>
+  <div class="room live"><div class="rt">&#128682; &#128273; &#128101;&#128101;</div>
+    <div class="rl">In use</div>
+    <div class="rd">Doors, keys, and people working inside. A live tool already exists.</div></div>
+  <div class="room none"><div class="rt" style="opacity:.4">&#9634; &#9634; &#9634;</div>
+    <div class="rl">Not installed</div>
+    <div class="rd">Banner offers it, but the room was never built here.</div></div>
+</div>
+
+<p>That is the whole mental model. The rest of this article is just how to ask Banner
+those three things precisely.</p>
+
+<h2>Three questions, three public tables</h2>
+
+<h3>1. Do the screens exist?</h3>
+<p>Banner keeps a catalogue of every object, forms, jobs, menus, in <code>GUBOBJS</code>.
+Filtering it to forms whose names match a module's prefix tells you the capability is
+actually installed, not an orphan table. Fixed Assets forms start with <code>FFA</code>:</p>
+<pre><span class="c">-- the screens Banner ships for Fixed Assets</span>
+<span class="k">SELECT</span> gubobjs_name, gubobjs_desc
+  <span class="k">FROM</span> gubobjs
+ <span class="k">WHERE</span> gubobjs_objt_code = <span class="s">'FORM'</span>
+   <span class="k">AND</span> gubobjs_name <span class="k">LIKE</span> <span class="s">'FFA%'</span>
+ <span class="k">ORDER BY</span> gubobjs_name;</pre>
+<p class="note">You get the form codes (FFAMAST, FFADEPR, and so on) and their descriptions.
+If this returns rows, the capability is installed. If it returns nothing, the module was
+never delivered.</p>
+
+<h3>2. Can anyone reach them?</h3>
+<p>Banner resolves security access through the view <code>GUVUACC</code>. Counting the
+distinct users who can reach a module's objects tells you whether the door is even open.
+This is the same access data a good security review reads:</p>
+<pre><span class="c">-- how many real users can reach the module's objects</span>
+<span class="k">SELECT</span> <span class="k">COUNT</span>(<span class="k">DISTINCT</span> guvuacc_user)
+  <span class="k">FROM</span> guvuacc
+ <span class="k">WHERE</span> guvuacc_object <span class="k">LIKE</span> <span class="s">'FFA%'</span>
+   <span class="k">AND</span> guvuacc_role <span class="k">NOT IN</span>
+       (<span class="s">'BAN_DEFAULT_NO_ACCESS'</span>, <span class="s">'BAN_DEFAULT_CONNECT'</span>);</pre>
+<p class="note">Two cautions. This is "can reach", not "uses": it is the size of the open
+door, not the traffic through it. And exclude the default no-access roles, or everyone
+looks like they have access to everything.</p>
+
+<h3>3. Is there data, and is it recent?</h3>
+<p>This is the judge. Every Banner capability has a canonical table that holds its real
+records. For Fixed Assets it is the asset master, <code>FFBMAST</code>. Count it, and read
+the newest activity date. Banner puts an <code>_ACTIVITY_DATE</code> column on almost
+every table:</p>
+<pre><span class="c">-- the judge: how much is in the room, and how fresh</span>
+<span class="k">SELECT</span> <span class="k">COUNT</span>(*)                     <span class="k">AS</span> records,
+       <span class="k">MAX</span>(ffbmast_activity_date)   <span class="k">AS</span> last_activity
+  <span class="k">FROM</span> ffbmast;</pre>
+<p class="note">Zero records means the capability is owned and not used, no matter how many
+screens ship or how many people hold keys. Records with a last activity years in the past
+means it was abandoned. Recent records means it is live.</p>
+
+<h2>The verdict</h2>
+<p>Put the three answers together and each capability lands in one bucket:</p>
+<div class="verd">
+  <div class="vrow"><span class="cond">The canonical table is <b>not there</b> at all</span><span class="chip grey">Not installed</span></div>
+  <div class="vrow"><span class="cond">It is <b>empty</b>, and Banner is meant to have it</span><span class="chip red">Owned, not used</span></div>
+  <div class="vrow"><span class="cond">It is empty, but a <b>custom table</b> quietly does the job</span><span class="chip amber">Custom-built</span></div>
+  <div class="vrow"><span class="cond">It is empty <b>by design</b> (housing at a college with no residence halls)</span><span class="chip grey">Expected absent</span></div>
+  <div class="vrow"><span class="cond">It has data, but <b>nothing recent</b></span><span class="chip red">Abandoned</span></div>
+  <div class="vrow"><span class="cond">It has <b>recent</b> activity</span><span class="chip green">In use</span></div>
+</div>
+
+<h2>Read the whole module, not one table</h2>
+<p>One empty table is a hint. A whole module of empty tables is a finding. Oracle's own
+statistics give you the size of every table for free, so you can census an entire module
+and say how little of it holds data. And <code>DBA_TAB_COMMENTS</code> gives you Banner's
+plain-English description of each table, so the reader sees what each one <i>is</i>:</p>
+<pre><span class="c">-- census a whole module, with each table's description</span>
+<span class="k">SELECT</span> t.table_name, t.num_rows, c.comments
+  <span class="k">FROM</span> dba_tables t
+  <span class="k">LEFT JOIN</span> dba_tab_comments c
+         <span class="k">ON</span> c.owner = t.owner <span class="k">AND</span> c.table_name = t.table_name
+ <span class="k">WHERE</span> t.owner = <span class="s">'FIMSMGR'</span>
+   <span class="k">AND</span> t.table_name <span class="k">LIKE</span> <span class="s">'FF%'</span>
+ <span class="k">ORDER BY</span> t.num_rows <span class="k">DESC NULLS LAST</span>;</pre>
+<p class="note">A line like "only N of M tables in this module hold any data" lands harder
+than a single empty count, and <code>DBA_TAB_COMMENTS</code> turns a wall of codes into
+readable evidence: <code>FFBMAST</code> becomes "Fixed Asset Master table".</p>
+
+<h2>Capabilities worth checking</h2>
+<p>These are the capabilities colleges most often license and under-use, with the form
+prefix and canonical table to check each. They are <b>candidates to measure, not
+conclusions</b>: whether any of them is idle depends entirely on your own database. Run
+the three questions above against each and let your data decide.</p>
+
+<table>
+<tr><th>Capability</th><th>Often bought instead</th><th>Forms</th><th>Canonical table</th></tr>
+<tr><td>Fixed Assets</td><td>asset-inventory system</td><td><code>FFA%</code></td><td><code>FFBMAST</code></td></tr>
+<tr><td>Event Management</td><td>EMS / 25Live</td><td><code>SLA%</code></td><td><code>SLBEVNT</code></td></tr>
+<tr><td>HR Recruitment / Applicant Tracking</td><td>NEOGOV / PageUp</td><td><code>PAAAPPL</code></td><td><code>PABAPPL</code></td></tr>
+<tr><td>Effort Certification</td><td>effort-certification software</td><td>desc "Effort"</td><td><code>PTRECPD</code></td></tr>
+<tr><td>Banner Workflow</td><td>Kuali / DocuSign / Formstack</td><td>web app</td><td><code>ENG_WORKFLOW</code></td></tr>
+<tr><td>Salary Planner</td><td>budget-planning software</td><td>desc "Salary Planner"</td><td><code>NBREHDR</code></td></tr>
+<tr><td>Advancement / Alumni</td><td>fundraising CRM</td><td><code>APA%</code></td><td><code>APBCONS</code></td></tr>
+</table>
+
+<p class="note">A tip for Banner Workflow: the engine ships with a single sample process
+named <b>"system verification"</b>, the built-in installation test. If that is the only
+row in <code>PROCESS_DEFINITION</code>, the engine was stood up and never used for real
+work. That is a generic Banner fact, true of any fresh install.</p>
+
+<h2>Three ways to fool yourself</h2>
+
+<div class="rule"><b>Empty is not the same as unlicensed.</b> A capability nobody ever paid
+for would also be empty. This method measures <b>use</b>, not entitlement. Before telling a
+department "you already own this", confirm it is in your current Ellucian license. You are
+showing the door and the traffic; the contract is a separate question.</div>
+
+<div class="warn"><b>Do not judge by whether a report exists.</b> It is tempting to ask "is
+there a report on this module?" But a capability can be used entirely inside Banner,
+through its own screens and native output, and never have a custom report built on it. A
+missing report proves nothing. Ask the data and the screens, never the report list.</div>
+
+<div class="warn"><b>Watch the neighbours and the validation tables.</b> A module's canonical
+table can be empty while a sibling holds data for a related purpose (buildings defined for
+class scheduling even when event bookings are dead; certifications tracked even when the
+skills matrix is empty). Always name the one table the verdict rests on, and skip Banner's
+validation tables (a <code>V</code> in the third position of the name, like
+<code>FFVACON</code>) so their handful of seed codes do not read as real use.</div>
+
+<h2>The tool</h2>
+<p>All of this fits in one script. It reads a curated catalogue of capabilities, asks the
+three questions for each, censuses each module, pulls the table descriptions, and writes
+two things: a spreadsheet, and a self-contained interactive page where you click a
+capability and see its screens, its tables, and the numbers behind the verdict. It touches
+nothing but read-only queries, and it produces <i>your</i> map from <i>your</i> database.
+Nobody's numbers travel anywhere.</p>
+
+<pre><span class="c"># one command, your own read-only Banner connection in a .env file</span>
+python bcm_report.py --out capability_map.xlsx --html capability_map.html</pre>
+
+<p>The output is a standing inventory. You do not run it in response to a purchase request;
+you keep it on the shelf, and when a department proposes buying a tool, you already have
+the row that says whether Banner does it, whether you own it, and whether anyone uses it.</p>
+
+<footer>
+This is a method, not a claim about any institution. Run it against your own Banner and the
+answers are entirely your own. Assembled from public Banner and Oracle data-dictionary
+knowledge that anyone can look up.
+</footer>
+
+</body>
+</html>

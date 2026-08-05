@@ -1,0 +1,20 @@
+# Credentials. Never commit these.
+.env
+
+# Generated reports. These contain YOUR institution's findings: which modules you own
+# and do not use, and how many people can change them. That is an internal audit
+# result, not sample data. Keep it off any remote you do not fully control.
+*.xlsx
+*.html
+!capability-map-guide.html
+
+# The run history. Same reason, and it accumulates: every snapshot names the security
+# groups and classes in your Banner.
+history/
+demo/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
